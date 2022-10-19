@@ -1,0 +1,28 @@
+service: spotpriset
+
+frameworkVersion: '2 || 3'
+
+plugins:
+  - serverless-esbuild
+  - serverless-iam-roles-per-function
+
+provider:
+  name: aws
+  region: eu-north-1
+  runtime: nodejs14.x
+
+custom:
+  topicArn: arn:aws:sns:eu-north-1:293310302791:elpriset
+
+functions:
+  cronHandler:
+    handler: handler.run
+    environment:
+      TOPIC_ARN: ${self:custom.topicArn}
+    events:
+      - schedule: cron(0 15 ? * * *)
+    iamRoleStatements:
+    - Effect: "Allow"        
+      Action:
+        - SNS:Publish      
+      Resource: ${self:custom.topicArn}
