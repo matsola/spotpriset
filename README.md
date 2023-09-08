@@ -1,3 +1,3 @@
 # Spotpriset lambda
 
-Simple script to fetch prices and distribute it via SNS.
+Simple script to fetch power prices from nordpool and distribute it via SNS.

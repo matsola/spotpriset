@@ -9,7 +9,7 @@ plugins:
 provider:
   name: aws
   region: eu-north-1
-  runtime: nodejs14.x
+  runtime: nodejs18.x
 
 custom:
   topicArn: arn:aws:sns:eu-north-1:293310302791:elpriset
