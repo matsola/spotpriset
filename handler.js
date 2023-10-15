@@ -25,6 +25,7 @@ const table = (hourly) => {
 };
 
 const pricesFor = async (date) => {
+  console.log(`Fetching prices for ${date} and ${AREA} (${CURRENCY})`);
   const prices = new Prices();
   const hourly = await prices.hourly({
     area: AREA,
@@ -44,11 +45,13 @@ const pricesFor = async (date) => {
 };
 
 export const run = async () => {
+  const snsClient = new SNSClient({ region: "eu-north-1" });
+
   try {
+    console.log("Starting ...");
     const text = await pricesFor(
       datefns.startOfDay(datefns.addDays(new Date(), 0)),
     );
-    const snsClient = new SNSClient({ region: "eu-north-1" });
     await snsClient.send(
       new PublishCommand({
         Message: text,
@@ -56,6 +59,16 @@ export const run = async () => {
       }),
     );
   } catch (error) {
+    console.log("Got error");
+    console.log(error);
+
+    await snsClient.send(
+      new PublishCommand({
+        Message: `Kunde inte hämta elpriserna. Fick följande fel:\n${error}`,
+        TopicArn: process.env.TOPIC_ARN,
+      }),
+    );
+
     return error;
   }
 };
