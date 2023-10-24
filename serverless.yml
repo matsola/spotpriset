@@ -20,7 +20,7 @@ functions:
     environment:
       TOPIC_ARN: ${self:custom.topicArn}
     events:
-      - schedule: cron(0 15 ? * * *)
+      - schedule: cron(0 14 ? * * *)
     iamRoleStatements:
     - Effect: "Allow"        
       Action:

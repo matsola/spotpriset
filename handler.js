@@ -32,7 +32,7 @@ const pricesFor = async (date) => {
     currency: CURRENCY,
     from: date,
   });
-
+  console.log("Prices was fetched! Generating table");
   if (hourly.length > 0) {
     return `${header(datefns.addDays(date, 1), AREA, CURRENCY)}\n${table(
       hourly,
@@ -52,12 +52,14 @@ export const run = async () => {
     const text = await pricesFor(
       datefns.startOfDay(datefns.addDays(new Date(), 0)),
     );
+    console.log("Price fetched, pushing to sns ...");
     await snsClient.send(
       new PublishCommand({
         Message: text,
         TopicArn: process.env.TOPIC_ARN,
       }),
     );
+    console.log("Done!");
   } catch (error) {
     console.log("Got error");
     console.log(error);
