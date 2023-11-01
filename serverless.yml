@@ -17,10 +17,11 @@ custom:
 functions:
   cronHandler:
     handler: handler.run
+    timeout: 12
     environment:
       TOPIC_ARN: ${self:custom.topicArn}
     events:
-      - schedule: cron(0 14 ? * * *)
+      - schedule: cron(25 14 ? * * *)
     iamRoleStatements:
     - Effect: "Allow"        
       Action:
