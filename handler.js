@@ -6,12 +6,11 @@ import datefns from "date-fns";
 const CURRENCY = "SEK";
 const AREA = "SE3";
 
+const formatDate = (date) => datefns.format(date, "yyyy-MM-dd");
 const toLocal = (date) => datefnstz.utcToZonedTime(date, "Europe/Stockholm");
+
 const header = (date, area, currency) =>
-  `Priser för ${datefns.format(
-    toLocal(date),
-    "yyyy-MM-dd",
-  )} i ${area} (${currency}/kWh)`;
+  `Priser för ${formatDate(toLocal(date))} i ${area} (${currency}/kWh)`;
 
 const table = (hourly) => {
   let str = "";
@@ -38,9 +37,8 @@ const pricesFor = async (date) => {
       hourly,
     )}`;
   }
-  return `Inga priser för ${datefns.format(
+  return `Inga priser för ${formatDate(
     datefns.addDays(date, 1),
-    "yyyy-MM-dd",
   )} tillgängliga.`;
 };
 
@@ -49,14 +47,15 @@ export const run = async () => {
 
   try {
     console.log("Starting ...");
-    const text = await pricesFor(
-      datefns.startOfDay(datefns.addDays(new Date(), 0)),
-    );
+    const today = datefns.startOfDay(datefns.addDays(new Date(), 0));
+    const text = await pricesFor(today);
+
     console.log("Price fetched, pushing to sns ...");
     await snsClient.send(
       new PublishCommand({
         Message: text,
         TopicArn: process.env.TOPIC_ARN,
+        Subject: `Elpriset för ${formatDate(today)}`,
       }),
     );
     console.log("Done!");
@@ -68,6 +67,7 @@ export const run = async () => {
       new PublishCommand({
         Message: `Kunde inte hämta elpriserna. Fick följande fel:\n${error}`,
         TopicArn: process.env.TOPIC_ARN,
+        Subject: `Kunde in skapa elprismail (${formatDate(today)})`,
       }),
     );
 
