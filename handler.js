@@ -1,5 +1,4 @@
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
-import { Prices } from "nordpool";
 import datefnstz from "date-fns-tz";
 import datefns from "date-fns";
 
@@ -10,7 +9,7 @@ const formatDate = (date) => datefns.format(date, "yyyy-MM-dd");
 const toLocal = (date) => datefnstz.utcToZonedTime(date, "Europe/Stockholm");
 
 const header = (date, area, currency) =>
-  `Priser för ${formatDate(toLocal(date))} i ${area} (${currency}/kWh)`;
+  `Priser för ${date} i ${area} (${currency}/kWh)`;
 
 const table = (hourly) => {
   let str = "";
@@ -23,18 +22,32 @@ const table = (hourly) => {
   return str;
 };
 
+const fetchData = async (date, area, currency) => {
+  const res = await fetch(
+    `https://dataportal-api.nordpoolgroup.com/api/DayAheadPrices?date=${formatDate(
+      date,
+    )}&market=DayAhead&deliveryArea=${area}&currency=${currency}`,
+  );
+  const data = await res.json();
+  const hourly = data.multiAreaEntries.map((v) => ({
+    date: v.deliveryStart,
+    value: v.entryPerArea[area],
+  }));
+
+  return {
+    deliveryDate: data.deliveryDateCET,
+    hourly: hourly,
+  };
+};
+
 const pricesFor = async (date) => {
   console.log(`Fetching prices for ${date} and ${AREA} (${CURRENCY})`);
-  const prices = new Prices();
-  const hourly = await prices.hourly({
-    area: AREA,
-    currency: CURRENCY,
-    from: date,
-  });
+  const data = await fetchData(date, AREA, CURRENCY);
   console.log("Prices was fetched! Generating table");
-  if (hourly.length > 0) {
-    return `${header(datefns.addDays(date, 1), AREA, CURRENCY)}\n${table(
-      hourly,
+
+  if (data && data.hourly && data.hourly.length > 0) {
+    return `${header(data.deliveryDate, AREA, CURRENCY)}\n${table(
+      data.hourly,
     )}`;
   }
   return `Inga priser för ${formatDate(
@@ -47,7 +60,7 @@ export const run = async () => {
 
   try {
     console.log("Starting ...");
-    const today = datefns.startOfDay(datefns.addDays(new Date(), 0));
+    const today = datefns.startOfDay(datefns.addDays(new Date(), 1));
     const text = await pricesFor(today);
 
     console.log("Price fetched, pushing to sns ...");
@@ -70,7 +83,6 @@ export const run = async () => {
         Subject: `Kunde in skapa elprismail (${formatDate(today)})`,
       }),
     );
-
     return error;
   }
 };
