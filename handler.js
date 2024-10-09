@@ -1,12 +1,12 @@
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
-import datefnstz from "date-fns-tz";
-import datefns from "date-fns";
+import * as datefnstz from "date-fns-tz";
+import * as datefns from "date-fns";
 
 const CURRENCY = "SEK";
 const AREA = "SE3";
 
 const formatDate = (date) => datefns.format(date, "yyyy-MM-dd");
-const toLocal = (date) => datefnstz.utcToZonedTime(date, "Europe/Stockholm");
+const toLocal = (date) => datefnstz.toZonedTime(date, "Europe/Stockholm");
 
 const header = (date, area, currency) =>
   `Priser för ${date} i ${area} (${currency}/kWh)`;
@@ -62,8 +62,6 @@ export const run = async () => {
     console.log("Starting ...");
     const today = datefns.startOfDay(datefns.addDays(new Date(), 1));
     const text = await pricesFor(today);
-
-    console.log("Price fetched, pushing to sns ...");
     await snsClient.send(
       new PublishCommand({
         Message: text,
